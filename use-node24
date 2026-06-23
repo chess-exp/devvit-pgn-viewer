@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH="/home/ubuntu/devvit-pgn-viewer/.tools/node/bin:$PATH"
+exec "$@"
