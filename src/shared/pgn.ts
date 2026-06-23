@@ -1,0 +1,59 @@
+export type PgnHeaders = {
+  event?: string;
+  site?: string;
+  date?: string;
+  round?: string;
+  white?: string;
+  black?: string;
+  result?: string;
+};
+
+export type PgnPostData = {
+  version: 1;
+  kind: 'pgn-viewer';
+  redisKey: string;
+  headers: PgnHeaders;
+  plyCount: number;
+  pgnLength: number;
+  pgnSha256: string;
+  createdAt: string;
+};
+
+export type RedisPgnRecord = {
+  version: 1;
+  pgn: string;
+  headers: PgnHeaders;
+  plyCount: number;
+  pgnLength: number;
+  pgnSha256: string;
+  postId?: string;
+  createdAt: string;
+};
+
+export type PgnApiResponse =
+  | {
+      status: 'ok';
+      postId: string;
+      pgn: string;
+      headers: PgnHeaders;
+      plyCount: number;
+    }
+  | {
+      status: 'error';
+      message: string;
+    };
+
+export type ValidationError = {
+  valid: false;
+  message: string;
+};
+
+export type ValidatedPgn = {
+  valid: true;
+  pgn: string;
+  headers: PgnHeaders;
+  plyCount: number;
+  pgnSha256: string;
+  pgnLength: number;
+  textFallback: string;
+};
