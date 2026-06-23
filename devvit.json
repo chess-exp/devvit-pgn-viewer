@@ -6,10 +6,7 @@
     "entrypoints": {
       "default": {
         "inline": true,
-        "entry": "splash.html"
-      },
-      "game": {
-        "entry": "game.html"
+        "entry": "viewer.html"
       }
     }
   },
@@ -17,29 +14,23 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
+  "permissions": {
+    "reddit": true,
+    "redis": true
+  },
   "menu": {
     "items": [
       {
-        "label": "Create a new post",
-        "description": "pgn-viewer",
+        "label": "Create PGN Viewer",
+        "description": "Create an interactive chess PGN post",
         "location": "subreddit",
         "forUserType": "moderator",
-        "endpoint": "/internal/menu/post-create"
-      },
-      {
-        "label": "Example form",
-        "description": "Show a simple form",
-        "location": "subreddit",
-        "forUserType": "moderator",
-        "endpoint": "/internal/menu/example-form"
+        "endpoint": "/internal/menu/create-pgn-viewer"
       }
     ]
   },
   "forms": {
-    "exampleForm": "/internal/form/example-submit"
-  },
-  "triggers": {
-    "onAppInstall": "/internal/triggers/on-app-install"
+    "createPgnViewer": "/internal/form/create-pgn-viewer"
   },
   "scripts": {
     "dev": "vite build --watch",

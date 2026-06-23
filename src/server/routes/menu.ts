@@ -1,27 +1,34 @@
 import { Hono } from 'hono';
 import type { UiResponse } from '@devvit/web/shared';
-import { context } from '@devvit/web/server';
-import { createPost } from '../core/post';
 
 export const menu = new Hono();
 
-menu.post('/post-create', async (c) => {
-  try {
-    const post = await createPost();
-
-    return c.json<UiResponse>(
-      {
-        navigateTo: `https://reddit.com/r/${context.subredditName}/comments/${post.id}`,
+menu.post('/create-pgn-viewer', async (c) => {
+  return c.json<UiResponse>(
+    {
+      showForm: {
+        name: 'createPgnViewer',
+        form: {
+          fields: [
+            {
+              name: 'title',
+              label: 'Post Title',
+              type: 'string',
+              required: true,
+              placeholder: 'e.g., Kasparov vs. Deep Blue, Game 6',
+            },
+            {
+              name: 'pgn',
+              label: 'PGN Text',
+              type: 'paragraph',
+              required: true,
+              placeholder: 'Paste your PGN notation here...',
+            },
+          ],
+          acceptLabel: 'Create',
+        },
       },
-      200
-    );
-  } catch (error) {
-    console.error(`Error creating post: ${error}`);
-    return c.json<UiResponse>(
-      {
-        showToast: 'Failed to create post',
-      },
-      400
-    );
-  }
+    },
+    200
+  );
 });

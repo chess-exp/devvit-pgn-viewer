@@ -1,24 +1,19 @@
 import { Hono } from 'hono';
-import { context, redis, reddit } from '@devvit/web/server';
-import type {
-  DecrementResponse,
-  IncrementResponse,
-  InitResponse,
-} from '../../shared/api';
-
-type ErrorResponse = {
-  status: 'error';
-  message: string;
-};
+import { context } from '@devvit/web/server';
+import type { PgnApiResponse, PgnPostData } from '../../shared/pgn';
+import {
+  readRedisPgnRecord,
+  verifyRedisPgnIntegrity,
+} from '../storage';
 
 export const api = new Hono();
 
-api.get('/init', async (c) => {
-  const { postId } = context;
+api.get('/pgn', async (c) => {
+  const { postId, postData } = context;
 
   if (!postId) {
-    console.error('API Init Error: postId not found in devvit context');
-    return c.json<ErrorResponse>(
+    console.error('API /pgn Error: postId not found in context');
+    return c.json<PgnApiResponse>(
       {
         status: 'error',
         message: 'postId is required but missing from context',
@@ -27,67 +22,64 @@ api.get('/init', async (c) => {
     );
   }
 
-  try {
-    const [count, username] = await Promise.all([
-      redis.get('count'),
-      reddit.getCurrentUsername(),
-    ]);
-
-    return c.json<InitResponse>({
-      type: 'init',
-      postId: postId,
-      count: count ? parseInt(count) : 0,
-      username: username ?? 'anonymous',
-    });
-  } catch (error) {
-    console.error(`API Init Error for post ${postId}:`, error);
-    let errorMessage = 'Unknown error during initialization';
-    if (error instanceof Error) {
-      errorMessage = `Initialization failed: ${error.message}`;
-    }
-    return c.json<ErrorResponse>(
-      { status: 'error', message: errorMessage },
-      400
-    );
-  }
-});
-
-api.post('/increment', async (c) => {
-  const { postId } = context;
-  if (!postId) {
-    return c.json<ErrorResponse>(
+  if (!postData) {
+    console.error(`API /pgn Error: postData not found for post ${postId}`);
+    return c.json<PgnApiResponse>(
       {
         status: 'error',
-        message: 'postId is required',
+        message: 'Post data not found',
       },
       400
     );
   }
 
-  const count = await redis.incrBy('count', 1);
-  return c.json<IncrementResponse>({
-    count,
-    postId,
-    type: 'increment',
-  });
-});
+  const parsedPostData = postData as unknown as PgnPostData;
 
-api.post('/decrement', async (c) => {
-  const { postId } = context;
-  if (!postId) {
-    return c.json<ErrorResponse>(
+  if (parsedPostData.kind !== 'pgn-viewer' || parsedPostData.version !== 1) {
+    console.error(
+      `API /pgn Error: invalid postData kind/version for post ${postId}`
+    );
+    return c.json<PgnApiResponse>(
       {
         status: 'error',
-        message: 'postId is required',
+        message: 'This post is not a PGN viewer',
       },
       400
     );
   }
 
-  const count = await redis.incrBy('count', -1);
-  return c.json<DecrementResponse>({
-    count,
+  const record = await readRedisPgnRecord(parsedPostData.redisKey);
+  if (!record) {
+    console.error(
+      `API /pgn Error: Redis record not found at ${parsedPostData.redisKey}`
+    );
+    return c.json<PgnApiResponse>(
+      {
+        status: 'error',
+        message: 'PGN data not found',
+      },
+      404
+    );
+  }
+
+  if (!verifyRedisPgnIntegrity(record, parsedPostData)) {
+    console.error(
+      `API /pgn Error: integrity check failed for post ${postId}`
+    );
+    return c.json<PgnApiResponse>(
+      {
+        status: 'error',
+        message: 'PGN data integrity check failed',
+      },
+      500
+    );
+  }
+
+  return c.json<PgnApiResponse>({
+    status: 'ok',
     postId,
-    type: 'decrement',
+    pgn: record.pgn,
+    headers: record.headers,
+    plyCount: record.plyCount,
   });
 });
