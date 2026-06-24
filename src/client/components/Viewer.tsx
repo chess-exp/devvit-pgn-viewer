@@ -7,6 +7,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   FlipVertical2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import type { PgnApiResponse, PgnHeaders } from '../../shared/pgn';
 import {
@@ -39,6 +41,8 @@ export function Viewer() {
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>(
     'white'
   );
+  const [copiedPgn, setCopiedPgn] = useState(false);
+  const [copiedFen, setCopiedFen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const movesPanelRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +178,21 @@ export function Viewer() {
     setBoardOrientation((prev) => (prev === 'white' ? 'black' : 'white'));
   };
 
+  const copyToClipboard = async (text: string, type: 'pgn' | 'fen') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === 'pgn') {
+        setCopiedPgn(true);
+        setTimeout(() => setCopiedPgn(false), 2000);
+      } else {
+        setCopiedFen(true);
+        setTimeout(() => setCopiedFen(false), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement | null;
     if (
@@ -225,21 +244,60 @@ export function Viewer() {
     >
       <Banner {...(state.description ? { description: state.description } : {})} />
       <div className="mt-4 flex min-h-0 flex-1 flex-col sm:flex-row sm:items-start sm:justify-center sm:gap-6 first:mt-0">
-        <div
-          className="flex-shrink-0"
-          style={{
-            width: '100%',
-            maxWidth: 'min(80vh, 600px)',
-            aspectRatio: '1 / 1',
-          }}
-        >
-          <Chessboard
-            options={{
-              position: currentFen,
-              boardOrientation,
-              allowDragging: false,
+        <div className="flex flex-col gap-4">
+          <div
+            className="flex-shrink-0"
+            style={{
+              width: '100%',
+              maxWidth: 'min(80vh, 600px)',
+              aspectRatio: '1 / 1',
             }}
-          />
+          >
+            <Chessboard
+              options={{
+                position: currentFen,
+                boardOrientation,
+                allowDragging: false,
+              }}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => copyToClipboard(state.pgn, 'pgn')}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
+              aria-label="Copy PGN"
+            >
+              {copiedPgn ? (
+                <>
+                  <Check size={16} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  <span>Copy PGN</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => copyToClipboard(currentFen, 'fen')}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
+              aria-label="Copy current FEN"
+            >
+              {copiedFen ? (
+                <>
+                  <Check size={16} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  <span>Copy FEN</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 sm:mt-0 sm:max-h-[calc(100vh-3rem)] sm:w-80 sm:flex-initial">
