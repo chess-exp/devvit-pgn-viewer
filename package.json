@@ -32,7 +32,7 @@
     "@mliebelt/pgn-parser": "^1.4.19",
     "chess.js": "^1.4.0",
     "devvit": "0.13.4",
-    "hono": "4.12.21",
+    "hono": "4.12.27",
     "lucide-react": "^1.21.0",
     "react": "19.2.6",
     "react-chessboard": "^5.10.0",
