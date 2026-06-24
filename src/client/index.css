@@ -4,8 +4,63 @@ html {
   color-scheme: light dark;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   background: transparent;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.viewer-root {
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.viewer-board-column {
+  width: min(100%, 600px, max(10rem, calc(100vh - 13.5rem)));
+  width: min(100%, 600px, max(10rem, calc(100dvh - 13.5rem)));
+  min-width: 0;
+}
+
+.viewer-board-shell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-width: 0;
+  overflow: hidden;
+  background: #b58863;
+}
+
+.viewer-board-shell [id$='-board'] {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+}
+
+.viewer-board-shell [data-square] {
+  line-height: normal;
+}
+
+.viewer-moves-panel {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .viewer-board-column {
+    width: min(55vw, calc(100vh - 3rem), calc(100vw - 26rem), 600px);
+  }
 }
 
 /* Remove borders between chess board squares */

@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import {
@@ -118,7 +125,7 @@ export function Viewer() {
 
   if (state.status === 'loading') {
     return (
-      <div className="flex h-screen items-center justify-center text-neutral-700 dark:text-neutral-300">
+      <div className="flex h-dvh items-center justify-center text-neutral-700 dark:text-neutral-300">
         <p>Loading game...</p>
       </div>
     );
@@ -126,26 +133,22 @@ export function Viewer() {
 
   if (state.status === 'error') {
     return (
-      <div className="flex h-screen flex-col p-4 sm:p-6">
+      <div className="viewer-root flex flex-col p-3 sm:p-6">
         <Banner
           errorMessage={state.message}
           {...(state.description ? { description: state.description } : {})}
         />
-        <div className="mt-4 flex min-h-0 flex-1 items-start justify-center">
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 'min(80vh, 600px)',
-              aspectRatio: '1 / 1',
-            }}
-          >
-            <Chessboard
-              options={{
-                position: new Chess().fen(),
-                boardOrientation: 'white',
-                allowDragging: false,
-              }}
-            />
+        <div className="mt-3 flex justify-center sm:mt-4">
+          <div className="viewer-board-column">
+            <div className="viewer-board-shell">
+              <Chessboard
+                options={{
+                  position: new Chess().fen(),
+                  boardOrientation: 'white',
+                  allowDragging: false,
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -154,7 +157,7 @@ export function Viewer() {
 
   if (!currentNode) {
     return (
-      <div className="flex h-screen items-center justify-center text-neutral-700 dark:text-neutral-300">
+      <div className="flex h-dvh items-center justify-center text-neutral-700 dark:text-neutral-300">
         <p>Loading game...</p>
       </div>
     );
@@ -240,20 +243,16 @@ export function Viewer() {
       ref={rootRef}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="flex h-screen flex-col p-4 outline-none sm:p-6"
+      className="viewer-root flex flex-col p-3 outline-none sm:p-6"
     >
-      <Banner {...(state.description ? { description: state.description } : {})} />
-      <div className="mt-4 flex min-h-0 flex-1 flex-col sm:flex-row sm:items-start sm:justify-center sm:gap-6 first:mt-0">
+      <Banner
+        className="hidden md:flex"
+        {...(state.description ? { description: state.description } : {})}
+      />
+      <div className="mt-2 flex w-full flex-col gap-2 md:mt-4 md:min-h-0 md:flex-1 md:flex-row md:items-start md:justify-center md:gap-6 first:mt-0">
         {/* Board and controls column - prioritized on mobile */}
-        <div className="flex flex-col gap-3">
-          <div
-            className="flex-shrink-0"
-            style={{
-              width: '100%',
-              maxWidth: 'min(80vh, 600px)',
-              aspectRatio: '1 / 1',
-            }}
-          >
+        <div className="viewer-board-column mx-auto flex flex-none flex-col gap-2 md:mx-0 md:gap-3">
+          <div className="viewer-board-shell flex-shrink-0">
             <Chessboard
               options={{
                 position: currentFen,
@@ -311,7 +310,7 @@ export function Viewer() {
           </div>
 
           {/* Copy buttons - compact on mobile */}
-          <div className="flex gap-2">
+          <div className="hidden gap-2 md:flex">
             <button
               onClick={() => copyToClipboard(state.pgn, 'pgn')}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
@@ -350,8 +349,8 @@ export function Viewer() {
         </div>
 
         {/* Info and moves sidebar - below board on mobile, beside on desktop */}
-        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 sm:mt-0 sm:max-h-[calc(100vh-3rem)] sm:w-80 sm:flex-initial">
-          <div className="rounded-lg bg-white p-4 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10">
+        <div className="mt-0 flex flex-none flex-col gap-2 md:mt-0 md:max-h-[calc(100vh-3rem)] md:min-h-0 md:w-80 md:flex-initial md:gap-3">
+          <div className="order-2 rounded-lg bg-white p-3 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10 md:order-1 md:p-4">
             <h2 className="mb-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
               {state.headers.white ?? 'White'} vs {state.headers.black ?? 'Black'}
             </h2>
@@ -370,7 +369,7 @@ export function Viewer() {
 
           <div
             ref={movesPanelRef}
-            className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white p-4 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10"
+            className="viewer-moves-panel order-1 max-h-32 overflow-y-auto rounded-lg bg-white p-3 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10 md:order-2 md:max-h-none md:min-h-0 md:flex-1 md:p-4"
           >
             <h3 className="mb-3 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
               Moves
@@ -390,6 +389,48 @@ export function Viewer() {
               />
             </div>
           </div>
+
+          <Banner
+            className="order-3 md:hidden"
+            {...(state.description ? { description: state.description } : {})}
+          />
+
+          <div className="order-4 flex gap-2 md:hidden">
+            <button
+              onClick={() => copyToClipboard(state.pgn, 'pgn')}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
+              aria-label="Copy PGN"
+            >
+              {copiedPgn ? (
+                <>
+                  <Check size={16} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  <span>Copy PGN</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => copyToClipboard(currentFen, 'fen')}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
+              aria-label="Copy current FEN"
+            >
+              {copiedFen ? (
+                <>
+                  <Check size={16} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  <span>Copy FEN</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -399,12 +440,13 @@ export function Viewer() {
 type BannerProps = {
   description?: string;
   errorMessage?: string;
+  className?: string;
 };
 
-function Banner({ description, errorMessage }: BannerProps) {
+function Banner({ description, errorMessage, className = '' }: BannerProps) {
   if (!description && !errorMessage) return null;
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col gap-2 ${className}`}>
       {errorMessage && (
         <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           <p className="break-words">{errorMessage}</p>

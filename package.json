@@ -7,6 +7,7 @@
   "scripts": {
     "build": "vite build",
     "deploy": "npm run type-check && npm run lint && devvit upload",
+    "deploy:chessexp": "./use-node24 sh -c \"npm run build && npm run type-check && npm run lint && devvit upload --bump patch && devvit install chessexp\"",
     "dev": "devvit playtest",
     "launch": "npm run deploy && devvit publish",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
