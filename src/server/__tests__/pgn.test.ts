@@ -184,3 +184,61 @@ describe('buildTextFallback', () => {
     expect(fb).toContain('1. e4');
   });
 });
+
+describe('validatePgn FEN handling', () => {
+  const STARTING_FEN =
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  const ENDGAME_FEN = '8/8/8/8/4k3/8/4K3/4Q3 w - - 0 1';
+  const ITALIAN_FEN =
+    'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3';
+
+  it('accepts a starting-position FEN as a zero-move PGN', () => {
+    const result = validatePgn(STARTING_FEN, 'Position');
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.plyCount).toBe(0);
+      expect(result.pgn).toContain('[FEN "');
+      expect(result.pgn).toContain('[SetUp "1"]');
+      expect(result.pgn).toContain(STARTING_FEN);
+    }
+  });
+
+  it('accepts a non-trivial endgame FEN', () => {
+    const result = validatePgn(ENDGAME_FEN, 'Endgame');
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.plyCount).toBe(0);
+      expect(result.pgn).toContain(ENDGAME_FEN);
+    }
+  });
+
+  it('accepts a middlegame FEN with castling rights', () => {
+    const result = validatePgn(ITALIAN_FEN, 'Italian Game');
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.pgn).toContain(ITALIAN_FEN);
+    }
+  });
+
+  it('rejects malformed FEN (wrong number of ranks)', () => {
+    const result = validatePgn('8/8/8 w - - 0 1', 'Bad');
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.message).toMatch(/FEN/i);
+    }
+  });
+
+  it('rejects six-token garbage that mimics FEN shape', () => {
+    // Has 6 tokens with 'w' as the second, but piece placement is invalid.
+    const result = validatePgn('zzz w - - 0 1', 'Bad');
+    expect(result.valid).toBe(false);
+  });
+
+  it('does not misclassify a one-line PGN as FEN', () => {
+    const result = validatePgn('1. e4 e5 2. Nf3 Nc6', 'PGN');
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.plyCount).toBe(4);
+    }
+  });
+});

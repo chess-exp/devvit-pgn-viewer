@@ -35,7 +35,6 @@ type ViewerState =
 
 export function Viewer() {
   const [state, setState] = useState<ViewerState>({ status: 'loading' });
-  const [chess] = useState(() => new Chess());
   const [currentNodeId, setCurrentNodeId] = useState<number>(0);
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>(
     'white'
@@ -94,13 +93,8 @@ export function Viewer() {
   }, []);
 
   const tree = state.status === 'ready' ? state.tree : null;
-
-  useEffect(() => {
-    if (!tree) return;
-    const node = tree.byId.get(currentNodeId);
-    if (!node) return;
-    chess.load(node.fen);
-  }, [tree, currentNodeId, chess]);
+  const currentNode = tree ? (tree.byId.get(currentNodeId) ?? tree.root) : null;
+  const currentFen = currentNode?.fen ?? new Chess().fen();
 
   useEffect(() => {
     rootRef.current?.focus();
@@ -154,7 +148,14 @@ export function Viewer() {
     );
   }
 
-  const currentNode = state.tree.byId.get(currentNodeId) ?? state.tree.root;
+  if (!currentNode) {
+    return (
+      <div className="flex h-screen items-center justify-center text-neutral-700 dark:text-neutral-300">
+        <p>Loading game...</p>
+      </div>
+    );
+  }
+
   const currentPly = currentNode.id === 0 ? 0 : (currentNode as TreeNode).ply;
 
   const goTo = (target: TreeNode | TreeRoot | null) => {
@@ -234,7 +235,7 @@ export function Viewer() {
         >
           <Chessboard
             options={{
-              position: chess.fen(),
+              position: currentFen,
               boardOrientation,
               allowDragging: false,
             }}

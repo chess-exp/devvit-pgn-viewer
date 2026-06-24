@@ -19,10 +19,10 @@ menu.post('/create-pgn-viewer', async (c) => {
             },
             {
               name: 'pgn',
-              label: 'PGN Text',
+              label: 'PGN or FEN',
               type: 'paragraph',
               required: true,
-              placeholder: 'Paste your PGN notation here...',
+              placeholder: 'Paste a PGN game, or a single FEN position (e.g. "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3")',
             },
             {
               name: 'description',

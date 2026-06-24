@@ -51,6 +51,10 @@ function mapNag(nag: string | undefined): string | undefined {
 export function buildTree(pgn: string): Tree {
   const parsed = parseGame(pgn, { startRule: 'game' });
   const chess = new Chess();
+  const fenTag = parsed.tags?.FEN;
+  if (typeof fenTag === 'string' && fenTag.trim() !== '') {
+    chess.load(fenTag.trim());
+  }
   const initialComment = parsed.gameComment?.comment?.trim();
   const root: TreeRoot = {
     id: 0,

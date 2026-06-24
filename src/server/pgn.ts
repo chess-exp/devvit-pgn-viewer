@@ -29,6 +29,12 @@ export function extractHeaders(chess: Chess): PgnHeaders {
   };
 }
 
+function looksLikeFen(s: string): boolean {
+  if (s.includes('\n')) return false;
+  const parts = s.trim().split(/\s+/);
+  return parts.length >= 6 && (parts[1] === 'w' || parts[1] === 'b');
+}
+
 export function validatePgn(
   input: unknown,
   title: string
@@ -52,9 +58,33 @@ export function validatePgn(
     };
   }
 
-  const chess = new Chess();
+  let pgnToValidate = pgn;
+  let wasFen = false;
+
+  if (looksLikeFen(pgn)) {
+    try {
+      new Chess(pgn);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : '';
+      return {
+        valid: false,
+        message: detail ? `Invalid FEN: ${detail}` : 'Invalid FEN notation.',
+      };
+    }
+    pgnToValidate = `[FEN "${pgn}"]\n[SetUp "1"]\n\n*`;
+    wasFen = true;
+  }
+
+  let chess: Chess;
   try {
-    chess.loadPgn(pgn, { strict: false });
+    // Extract FEN header if present to initialize Chess correctly
+    const fenMatch = pgnToValidate.match(/\[FEN\s+"([^"]+)"\]/);
+    if (fenMatch && fenMatch[1]) {
+      chess = new Chess(fenMatch[1]);
+    } else {
+      chess = new Chess();
+    }
+    chess.loadPgn(pgnToValidate, { strict: false });
   } catch (err) {
     const detail = err instanceof Error ? err.message : '';
     const hint =
@@ -66,7 +96,7 @@ export function validatePgn(
   }
 
   const history = chess.history({ verbose: true });
-  if (history.length === 0) {
+  if (history.length === 0 && !wasFen) {
     return {
       valid: false,
       message:
@@ -76,13 +106,13 @@ export function validatePgn(
 
   const plyCount = history.length;
   const headers = extractHeaders(chess);
-  const pgnSha256 = createHash('sha256').update(pgn).digest('hex');
-  const pgnLength = pgn.length;
-  const textFallback = buildTextFallback(pgn);
+  const pgnSha256 = createHash('sha256').update(pgnToValidate).digest('hex');
+  const pgnLength = pgnToValidate.length;
+  const textFallback = buildTextFallback(pgnToValidate);
 
   return {
     valid: true,
-    pgn,
+    pgn: pgnToValidate,
     headers,
     plyCount,
     pgnSha256,
