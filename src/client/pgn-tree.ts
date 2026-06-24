@@ -11,6 +11,9 @@ export type TreeNode = {
   commentBefore?: string;
   commentAfter?: string;
   nag?: string;
+  lastMove: BoardMove;
+  highlights?: BoardHighlight[];
+  arrows?: BoardArrow[];
 };
 
 export type TreeRoot = {
@@ -24,6 +27,22 @@ export type TreeRoot = {
 export type Tree = {
   root: TreeRoot;
   byId: Map<number, TreeNode | TreeRoot>;
+};
+
+export type BoardMove = {
+  from: string;
+  to: string;
+};
+
+export type BoardHighlight = {
+  square: string;
+  color: string;
+};
+
+export type BoardArrow = {
+  startSquare: string;
+  endSquare: string;
+  color: string;
 };
 
 const NAG_GLYPHS: Record<string, string> = {
@@ -48,6 +67,48 @@ function mapNag(nag: string | undefined): string | undefined {
   return NAG_GLYPHS[nag];
 }
 
+const DRAWING_COLORS: Record<string, string> = {
+  G: '#4caf50',
+  R: '#ef4444',
+  Y: '#f59e0b',
+  B: '#3b82f6',
+};
+
+function isSquare(value: string): boolean {
+  return /^[a-h][1-8]$/.test(value);
+}
+
+function parseColorPrefixedValue(
+  raw: string
+): { color: string; value: string } | null {
+  const trimmed = raw.trim();
+  const color = DRAWING_COLORS[trimmed.charAt(0).toUpperCase()];
+  const value = trimmed.slice(1).toLowerCase();
+  if (!color || value === '') return null;
+  return { color, value };
+}
+
+function parseHighlights(values: string[] | undefined): BoardHighlight[] {
+  return (values ?? []).flatMap((raw) => {
+    const parsed = parseColorPrefixedValue(raw);
+    if (!parsed || !isSquare(parsed.value)) return [];
+    return [{ square: parsed.value, color: parsed.color }];
+  });
+}
+
+function parseArrows(values: string[] | undefined): BoardArrow[] {
+  return (values ?? []).flatMap((raw) => {
+    const parsed = parseColorPrefixedValue(raw);
+    if (!parsed || parsed.value.length !== 4) return [];
+
+    const startSquare = parsed.value.slice(0, 2);
+    const endSquare = parsed.value.slice(2, 4);
+    if (!isSquare(startSquare) || !isSquare(endSquare)) return [];
+
+    return [{ startSquare, endSquare, color: parsed.color }];
+  });
+}
+
 export function buildTree(pgn: string): Tree {
   const parsed = parseGame(pgn, { startRule: 'game' });
   const chess = new Chess();
@@ -68,7 +129,10 @@ export function buildTree(pgn: string): Tree {
 
   let counter = 1;
 
-  const walk = (moves: typeof parsed.moves, parent: TreeNode | TreeRoot): void => {
+  const walk = (
+    moves: typeof parsed.moves,
+    parent: TreeNode | TreeRoot
+  ): void => {
     let prev: TreeNode | TreeRoot = parent;
     for (const m of moves) {
       const startFen = chess.fen();
@@ -77,9 +141,13 @@ export function buildTree(pgn: string): Tree {
       if (!result) {
         throw new Error(`Illegal move in PGN: ${san} at ${startFen}`);
       }
-      const commentAfterRaw = (m.commentAfter ?? m.commentDiag?.comment)?.trim();
+      const commentAfterRaw = (
+        m.commentAfter ?? m.commentDiag?.comment
+      )?.trim();
       const commentBeforeRaw = m.commentMove?.trim();
       const nagGlyph = mapNag(m.nag?.[0]);
+      const highlights = parseHighlights(m.commentDiag?.colorFields);
+      const arrows = parseArrows(m.commentDiag?.colorArrows);
       const node: TreeNode = {
         id: counter++,
         san: result.san,
@@ -87,9 +155,12 @@ export function buildTree(pgn: string): Tree {
         ply: (prev === root ? 0 : (prev as TreeNode).ply) + 1,
         parent: prev,
         children: [],
+        lastMove: { from: result.from, to: result.to },
         ...(commentBeforeRaw ? { commentBefore: commentBeforeRaw } : {}),
         ...(commentAfterRaw ? { commentAfter: commentAfterRaw } : {}),
         ...(nagGlyph ? { nag: nagGlyph } : {}),
+        ...(highlights.length > 0 ? { highlights } : {}),
+        ...(arrows.length > 0 ? { arrows } : {}),
       };
       prev.children.push(node);
       byId.set(node.id, node);
@@ -114,20 +185,18 @@ export function nextNode(node: TreeNode | TreeRoot): TreeNode | null {
   return node.children[0] ?? null;
 }
 
-export function prevNode(node: TreeNode | TreeRoot): TreeNode | TreeRoot | null {
+export function prevNode(
+  node: TreeNode | TreeRoot
+): TreeNode | TreeRoot | null {
   if (node.id === 0) return null;
   return (node as TreeNode).parent;
 }
 
-export function enterVariation(
-  node: TreeNode | TreeRoot
-): TreeNode | null {
+export function enterVariation(node: TreeNode | TreeRoot): TreeNode | null {
   return node.children[1] ?? null;
 }
 
-export function exitVariation(
-  node: TreeNode | TreeRoot
-): TreeNode | null {
+export function exitVariation(node: TreeNode | TreeRoot): TreeNode | null {
   let current: TreeNode | TreeRoot = node;
   while (current.id !== 0) {
     const parent = (current as TreeNode).parent;

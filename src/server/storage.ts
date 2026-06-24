@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { redis } from '@devvit/web/server';
-import type { RedisPgnRecord, PgnPostData } from '../shared/pgn';
+import { redis } from '@devvit/redis';
+import type {
+  PgnHeaders,
+  PgnPostData,
+  PgnSubmitter,
+  RedisPgnRecord,
+} from '../shared/pgn';
 
 const REDIS_KEY_PREFIX = 'pgn-viewer:v1:pgn:';
 
@@ -8,17 +13,33 @@ export function generateRedisKey(): string {
   return `${REDIS_KEY_PREFIX}${randomUUID()}`;
 }
 
-export async function writeRedisPgnRecord(
-  redisKey: string,
-  pgn: string,
-  headers: PgnPostData['headers'],
-  plyCount: number,
-  pgnSha256: string,
-  pgnLength: number,
-  postId?: string,
-  description?: string,
-  errorMessage?: string
-): Promise<void> {
+type WriteRedisPgnRecordInput = {
+  redisKey: string;
+  pgn: string;
+  headers: PgnHeaders;
+  plyCount: number;
+  pgnSha256: string;
+  pgnLength: number;
+  postId?: string;
+  description?: string;
+  errorMessage?: string;
+  puzzleMode?: boolean;
+  submitter?: PgnSubmitter;
+};
+
+export async function writeRedisPgnRecord({
+  redisKey,
+  pgn,
+  headers,
+  plyCount,
+  pgnSha256,
+  pgnLength,
+  postId,
+  description,
+  errorMessage,
+  puzzleMode = false,
+  submitter,
+}: WriteRedisPgnRecordInput): Promise<void> {
   const record: RedisPgnRecord = {
     version: 1,
     pgn,
@@ -26,9 +47,11 @@ export async function writeRedisPgnRecord(
     plyCount,
     pgnLength,
     pgnSha256,
-    postId,
-    description,
-    errorMessage,
+    ...(puzzleMode ? { puzzleMode: true } : {}),
+    ...(submitter ? { submitter } : {}),
+    ...(postId ? { postId } : {}),
+    ...(description ? { description } : {}),
+    ...(errorMessage ? { errorMessage } : {}),
     createdAt: new Date().toISOString(),
   };
   await redis.set(redisKey, JSON.stringify(record));
@@ -47,7 +70,9 @@ export async function readRedisPgnRecord(
       return null;
     }
     if (!record.pgn && !record.errorMessage) {
-      console.error(`Invalid Redis record at ${redisKey}: missing pgn and errorMessage`);
+      console.error(
+        `Invalid Redis record at ${redisKey}: missing pgn and errorMessage`
+      );
       return null;
     }
     return record;

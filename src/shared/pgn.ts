@@ -8,6 +8,10 @@ export type PgnHeaders = {
   result?: string;
 };
 
+export type PgnSubmitter = {
+  username: string;
+};
+
 export type PgnPostData = {
   version: 1;
   kind: 'pgn-viewer';
@@ -17,6 +21,8 @@ export type PgnPostData = {
   pgnLength: number;
   pgnSha256: string;
   createdAt: string;
+  puzzleMode?: boolean;
+  submitter?: PgnSubmitter;
 };
 
 export type RedisPgnRecord = {
@@ -26,6 +32,8 @@ export type RedisPgnRecord = {
   plyCount: number;
   pgnLength: number;
   pgnSha256: string;
+  puzzleMode?: boolean;
+  submitter?: PgnSubmitter;
   description?: string;
   postId?: string;
   errorMessage?: string;
@@ -39,6 +47,8 @@ export type PgnApiResponse =
       pgn: string;
       headers: PgnHeaders;
       plyCount: number;
+      puzzleMode: boolean;
+      submitter?: PgnSubmitter;
       description?: string;
       errorMessage?: string;
     }

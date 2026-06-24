@@ -6,6 +6,8 @@ An interactive chess game viewer for Reddit, built with Devvit. Moderators can c
 
 - **Interactive Chessboard**: Navigate through chess games with forward/backward controls
 - **Move List**: Click any move to jump to that position
+- **Position Cues**: Last-move highlighting and check/checkmate indicators
+- **Puzzle Mode**: Start from the initial position and reveal the solution on demand
 - **Flip Board**: View from either White or Black's perspective
 - **Game Metadata**: Display player names, event, date, and result
 - **PGN Validation**: Server-side validation ensures only valid PGN is accepted
@@ -56,7 +58,7 @@ npm run dev
 1. Navigate to your subreddit (as a moderator)
 2. Open the three-dot menu (⋯) in the sidebar
 3. Select "Create PGN Viewer"
-4. Enter a post title and paste your PGN notation
+4. Enter a post title, paste your PGN notation or FEN, and optionally enable puzzle mode
 5. Click "Create"
 
 ### Supported PGN Format
@@ -65,6 +67,7 @@ The viewer supports standard PGN format including:
 - Standard algebraic notation (SAN)
 - Headers (Event, Site, Date, White, Black, Result)
 - Comments `{like this}`
+- Board drawings in comments: `[%csl Ge4,Yd5]` and `[%cal Gg1f3,Rd1d8]`
 - Numeric annotation glyphs (NAGs): `!`, `?`, `!!`, `??`, `!?`, `?!`
 - Castling: `O-O`, `O-O-O`
 - Pawn promotion: `e8=Q`
@@ -112,10 +115,11 @@ src/
 
 ## Testing
 
-19 comprehensive tests covering:
+32 comprehensive tests covering:
 - PGN normalization
 - Validation (title, length, format, content)
 - Edge cases (comments, NAGs, castling, promotion, checkmate)
+- Board drawing annotations
 - Header extraction
 - Text fallback generation
 
@@ -127,7 +131,7 @@ npm test
 ## Dependencies
 
 **Runtime:**
-- `@devvit/start`, `@devvit/web` - Devvit framework
+- `@devvit/start`, `@devvit/web`, `@devvit/server`, `@devvit/redis` - Devvit framework
 - `hono` - Web server
 - `chess.js` - Chess logic and PGN parsing
 - `react`, `react-dom` - UI framework

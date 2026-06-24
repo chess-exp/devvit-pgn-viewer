@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import { Hono } from 'hono';
-import type { UiResponse } from '@devvit/web/shared';
-import { context, reddit } from '@devvit/web/server';
+import type { UiResponse } from '@devvit/shared';
+import { context } from '@devvit/server';
+import { reddit } from '@devvit/web/server';
 import type { JsonObject } from '@devvit/shared-types/json.js';
-import type { PgnPostData } from '../../shared/pgn';
+import type { PgnPostData, PgnSubmitter } from '../../shared/pgn';
 import { validatePgn, normalizePgn, buildTextFallback } from '../pgn';
 import {
   generateRedisKey,
@@ -16,6 +17,7 @@ type CreatePgnViewerFormValues = {
   title?: string;
   pgn?: string;
   description?: string;
+  puzzleMode?: boolean;
 };
 
 const MAX_DESCRIPTION_LENGTH = 2000;
@@ -24,6 +26,16 @@ function normalizeDescription(input: unknown): string | undefined {
   if (typeof input !== 'string') return undefined;
   const trimmed = input.trim();
   return trimmed === '' ? undefined : trimmed;
+}
+
+function submitterFromContext(): PgnSubmitter | undefined {
+  const username =
+    typeof context.username === 'string' ? context.username.trim() : '';
+  if (!username) return undefined;
+
+  return {
+    username,
+  };
 }
 
 export const forms = new Hono();
@@ -42,6 +54,7 @@ forms.post('/create-pgn-viewer', async (c) => {
 
   const body = await c.req.json<CreatePgnViewerFormValues>();
   const { title, pgn, description } = body;
+  const puzzleMode = body.puzzleMode === true;
 
   const trimmedTitle = typeof title === 'string' ? title.trim() : '';
   if (!trimmedTitle) {
@@ -97,19 +110,21 @@ forms.post('/create-pgn-viewer', async (c) => {
   }
 
   const redisKey = generateRedisKey();
+  const submitter = submitterFromContext();
 
   try {
-    await writeRedisPgnRecord(
+    await writeRedisPgnRecord({
       redisKey,
-      storedPgn,
-      storedHeaders,
-      storedPlyCount,
-      storedPgnSha256,
-      storedPgnLength,
-      undefined,
-      normalizedDescription,
-      errorMessage
-    );
+      pgn: storedPgn,
+      headers: storedHeaders,
+      plyCount: storedPlyCount,
+      pgnSha256: storedPgnSha256,
+      pgnLength: storedPgnLength,
+      description: normalizedDescription,
+      errorMessage,
+      puzzleMode,
+      submitter,
+    });
 
     const postData: PgnPostData = {
       version: 1,
@@ -120,6 +135,8 @@ forms.post('/create-pgn-viewer', async (c) => {
       pgnLength: storedPgnLength,
       pgnSha256: storedPgnSha256,
       createdAt: new Date().toISOString(),
+      ...(puzzleMode ? { puzzleMode: true } : {}),
+      ...(submitter ? { submitter } : {}),
     };
 
     const post = await reddit.submitCustomPost({

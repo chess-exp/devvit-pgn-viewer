@@ -5,13 +5,15 @@
   "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "deploy": "npm run type-check && npm run lint && devvit upload",
+    "build": "npm run patch-devvit && vite build",
+    "deploy": "npm run patch-devvit && npm run type-check && npm run lint && devvit upload",
     "deploy:chessexp": "./use-node24 sh -c \"npm run build && npm run type-check && npm run lint && devvit upload --bump patch && devvit install chessexp\"",
-    "dev": "devvit playtest",
+    "dev": "npm run patch-devvit && devvit playtest",
     "launch": "npm run deploy && devvit publish",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "login": "devvit login",
+    "patch-devvit": "node tools/patch-devvit-buildpack.mjs",
+    "postinstall": "node tools/patch-devvit-buildpack.mjs",
     "prettier": "prettier --write .",
     "test": "vitest run",
     "type-check": "tsc --build"
@@ -20,6 +22,10 @@
     "node": ">=22.2.0"
   },
   "dependencies": {
+    "@devvit/redis": "0.13.4",
+    "@devvit/server": "0.13.4",
+    "@devvit/shared": "0.13.4",
+    "@devvit/shared-types": "0.13.4",
     "@devvit/start": "0.13.4",
     "@devvit/web": "0.13.4",
     "@hono/node-server": "2.0.3",

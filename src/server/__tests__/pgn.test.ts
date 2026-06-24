@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { validatePgn, normalizePgn, extractHeaders, buildTextFallback } from '../pgn';
+import {
+  validatePgn,
+  normalizePgn,
+  extractHeaders,
+  buildTextFallback,
+} from '../pgn';
 import { Chess } from 'chess.js';
 
 const VALID_PGN = `1. e4 e5 2. Nf3 Nc6 3. Bb5 a6`;
@@ -15,6 +20,8 @@ const WITH_HEADERS = `[Event "Test Match"]
 1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O`;
 
 const WITH_COMMENTS = `1. e4 {good move} e5 2. Nf3 Nc6`;
+
+const WITH_DRAWINGS = `1. e4 {[%csl Ge4,Yd5][%cal Gg1f3,Rd1d8]} e5 2. Nf3 Nc6`;
 
 const WITH_NAGS = `1. e4!? e5 2. Nf3 Nc6`;
 
@@ -108,6 +115,14 @@ describe('validatePgn', () => {
 
   it('accepts PGN with comments', () => {
     const result = validatePgn(WITH_COMMENTS, 'Comments');
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.plyCount).toBe(4);
+    }
+  });
+
+  it('accepts PGN with board drawings', () => {
+    const result = validatePgn(WITH_DRAWINGS, 'Board Drawings');
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.plyCount).toBe(4);

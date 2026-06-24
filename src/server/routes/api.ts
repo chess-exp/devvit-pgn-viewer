@@ -1,10 +1,7 @@
 import { Hono } from 'hono';
-import { context } from '@devvit/web/server';
+import { context } from '@devvit/server';
 import type { PgnApiResponse, PgnPostData } from '../../shared/pgn';
-import {
-  readRedisPgnRecord,
-  verifyRedisPgnIntegrity,
-} from '../storage';
+import { readRedisPgnRecord, verifyRedisPgnIntegrity } from '../storage';
 
 export const api = new Hono();
 
@@ -63,9 +60,7 @@ api.get('/pgn', async (c) => {
   }
 
   if (!verifyRedisPgnIntegrity(record, parsedPostData)) {
-    console.error(
-      `API /pgn Error: integrity check failed for post ${postId}`
-    );
+    console.error(`API /pgn Error: integrity check failed for post ${postId}`);
     return c.json<PgnApiResponse>(
       {
         status: 'error',
@@ -82,6 +77,9 @@ api.get('/pgn', async (c) => {
     pgn: record.pgn,
     headers: record.headers,
     plyCount: record.plyCount,
+    puzzleMode:
+      record.puzzleMode === true || parsedPostData.puzzleMode === true,
+    submitter: record.submitter ?? parsedPostData.submitter,
     description: record.description,
     errorMessage: record.errorMessage,
   });
