@@ -55,13 +55,23 @@ export function validatePgn(
   const chess = new Chess();
   try {
     chess.loadPgn(pgn, { strict: false });
-  } catch {
-    return { valid: false, message: 'Invalid PGN – could not be parsed.' };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : '';
+    const hint =
+      'Each move should be in standard algebraic notation (e.g., e4, Nf3, O-O).';
+    const message = detail
+      ? `Invalid PGN: ${detail}. ${hint}`
+      : `Invalid PGN – could not be parsed. ${hint}`;
+    return { valid: false, message };
   }
 
   const history = chess.history({ verbose: true });
   if (history.length === 0) {
-    return { valid: false, message: 'PGN contains no moves.' };
+    return {
+      valid: false,
+      message:
+        'PGN contains no moves. Paste the full game starting with "1. e4 ..." (headers in [brackets] are optional).',
+    };
   }
 
   const plyCount = history.length;

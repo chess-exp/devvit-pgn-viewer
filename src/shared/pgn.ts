@@ -26,7 +26,9 @@ export type RedisPgnRecord = {
   plyCount: number;
   pgnLength: number;
   pgnSha256: string;
+  description?: string;
   postId?: string;
+  errorMessage?: string;
   createdAt: string;
 };
 
@@ -37,10 +39,13 @@ export type PgnApiResponse =
       pgn: string;
       headers: PgnHeaders;
       plyCount: number;
+      description?: string;
+      errorMessage?: string;
     }
   | {
       status: 'error';
       message: string;
+      description?: string;
     };
 
 export type ValidationError = {

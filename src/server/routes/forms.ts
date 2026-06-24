@@ -1,9 +1,10 @@
+import { createHash } from 'node:crypto';
 import { Hono } from 'hono';
 import type { UiResponse } from '@devvit/web/shared';
 import { context, reddit } from '@devvit/web/server';
 import type { JsonObject } from '@devvit/shared-types/json.js';
 import type { PgnPostData } from '../../shared/pgn';
-import { validatePgn, buildTextFallback } from '../pgn';
+import { validatePgn, normalizePgn, buildTextFallback } from '../pgn';
 import {
   generateRedisKey,
   writeRedisPgnRecord,
@@ -14,7 +15,16 @@ import {
 type CreatePgnViewerFormValues = {
   title?: string;
   pgn?: string;
+  description?: string;
 };
+
+const MAX_DESCRIPTION_LENGTH = 2000;
+
+function normalizeDescription(input: unknown): string | undefined {
+  if (typeof input !== 'string') return undefined;
+  const trimmed = input.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
 
 export const forms = new Hono();
 
@@ -26,22 +36,64 @@ forms.post('/create-pgn-viewer', async (c) => {
       {
         showToast: 'Failed to create post: subreddit not found',
       },
-      400
+      200
     );
   }
 
   const body = await c.req.json<CreatePgnViewerFormValues>();
-  const { title, pgn } = body;
+  const { title, pgn, description } = body;
 
-  const validation = validatePgn(pgn, title ?? '');
-  if (!validation.valid) {
-    console.error(`Form validation failed: ${validation.message}`);
+  const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+  if (!trimmedTitle) {
+    console.error('Form validation failed: title is required');
     return c.json<UiResponse>(
       {
-        showToast: validation.message,
+        showToast: 'Title is required.',
       },
-      400
+      200
     );
+  }
+  if (trimmedTitle.length > 300) {
+    console.error('Form validation failed: title too long');
+    return c.json<UiResponse>(
+      {
+        showToast: 'Title must be 300 characters or fewer.',
+      },
+      200
+    );
+  }
+
+  const normalizedDescription = normalizeDescription(description);
+  if (
+    normalizedDescription &&
+    normalizedDescription.length > MAX_DESCRIPTION_LENGTH
+  ) {
+    return c.json<UiResponse>(
+      {
+        showToast: `Description must be ${MAX_DESCRIPTION_LENGTH.toLocaleString()} characters or fewer.`,
+      },
+      200
+    );
+  }
+
+  const validation = validatePgn(pgn, trimmedTitle);
+  const validPgn = validation.valid;
+
+  // If invalid, still create the post but with the error captured so the
+  // viewer can display it. Stash the user's raw input so they can see what
+  // they pasted and fix it.
+  const rawPgn = normalizePgn(pgn);
+  const storedPgn = validPgn ? validation.pgn : rawPgn;
+  const storedHeaders = validPgn ? validation.headers : {};
+  const storedPlyCount = validPgn ? validation.plyCount : 0;
+  const storedPgnLength = validPgn ? validation.pgnLength : rawPgn.length;
+  const storedPgnSha256 = validPgn
+    ? validation.pgnSha256
+    : createHash('sha256').update(rawPgn).digest('hex');
+  const errorMessage = validPgn ? undefined : validation.message;
+
+  if (!validPgn) {
+    console.error(`Form validation failed: ${validation.message}`);
   }
 
   const redisKey = generateRedisKey();
@@ -49,31 +101,36 @@ forms.post('/create-pgn-viewer', async (c) => {
   try {
     await writeRedisPgnRecord(
       redisKey,
-      validation.pgn,
-      validation.headers,
-      validation.plyCount,
-      validation.pgnSha256,
-      validation.pgnLength
+      storedPgn,
+      storedHeaders,
+      storedPlyCount,
+      storedPgnSha256,
+      storedPgnLength,
+      undefined,
+      normalizedDescription,
+      errorMessage
     );
 
     const postData: PgnPostData = {
       version: 1,
       kind: 'pgn-viewer',
       redisKey,
-      headers: validation.headers,
-      plyCount: validation.plyCount,
-      pgnLength: validation.pgnLength,
-      pgnSha256: validation.pgnSha256,
+      headers: storedHeaders,
+      plyCount: storedPlyCount,
+      pgnLength: storedPgnLength,
+      pgnSha256: storedPgnSha256,
       createdAt: new Date().toISOString(),
     };
 
     const post = await reddit.submitCustomPost({
       subredditName,
-      title: title ?? 'Chess Game',
+      title: trimmedTitle,
       entry: 'default',
       postData: postData as unknown as JsonObject,
       textFallback: {
-        text: buildTextFallback(validation.pgn),
+        text: validPgn
+          ? buildTextFallback(validation.pgn)
+          : `**Invalid PGN:** ${validation.message}`,
       },
       styles: {
         heightPixels: 600,
@@ -97,7 +154,7 @@ forms.post('/create-pgn-viewer', async (c) => {
       {
         showToast: 'Failed to create post. Please try again.',
       },
-      500
+      200
     );
   }
 });

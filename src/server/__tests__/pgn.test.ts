@@ -85,6 +85,22 @@ describe('validatePgn', () => {
     expect(result.valid).toBe(false);
   });
 
+  it('includes an SAN hint in the rejection message', () => {
+    const result = validatePgn('this is not pgn', 'Title');
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.message).toMatch(/standard algebraic notation/i);
+    }
+  });
+
+  it('surfaces the offending move when a PGN has an illegal move', () => {
+    const result = validatePgn('1. e4 e5 2. Nf3 NN3', 'Title');
+    expect(result.valid).toBe(false);
+    if (!result.valid) {
+      expect(result.message.toLowerCase()).toContain('nn3');
+    }
+  });
+
   it('rejects PGN with zero moves', () => {
     const result = validatePgn('', 'Title');
     expect(result.valid).toBe(false);

@@ -24,6 +24,13 @@ menu.post('/create-pgn-viewer', async (c) => {
               required: true,
               placeholder: 'Paste your PGN notation here...',
             },
+            {
+              name: 'description',
+              label: 'Description (optional)',
+              type: 'paragraph',
+              required: false,
+              placeholder: 'Add a short note shown above the board...',
+            },
           ],
           acceptLabel: 'Create',
         },

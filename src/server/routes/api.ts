@@ -70,6 +70,7 @@ api.get('/pgn', async (c) => {
       {
         status: 'error',
         message: 'PGN data integrity check failed',
+        description: record.description,
       },
       500
     );
@@ -81,5 +82,7 @@ api.get('/pgn', async (c) => {
     pgn: record.pgn,
     headers: record.headers,
     plyCount: record.plyCount,
+    description: record.description,
+    errorMessage: record.errorMessage,
   });
 });

@@ -24,7 +24,6 @@
         "label": "Create PGN Viewer",
         "description": "Create an interactive chess PGN post",
         "location": "subreddit",
-        "forUserType": "moderator",
         "endpoint": "/internal/menu/create-pgn-viewer"
       }
     ]

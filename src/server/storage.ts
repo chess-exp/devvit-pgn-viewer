@@ -15,7 +15,9 @@ export async function writeRedisPgnRecord(
   plyCount: number,
   pgnSha256: string,
   pgnLength: number,
-  postId?: string
+  postId?: string,
+  description?: string,
+  errorMessage?: string
 ): Promise<void> {
   const record: RedisPgnRecord = {
     version: 1,
@@ -25,6 +27,8 @@ export async function writeRedisPgnRecord(
     pgnLength,
     pgnSha256,
     postId,
+    description,
+    errorMessage,
     createdAt: new Date().toISOString(),
   };
   await redis.set(redisKey, JSON.stringify(record));
@@ -38,8 +42,12 @@ export async function readRedisPgnRecord(
 
   try {
     const record = JSON.parse(raw) as RedisPgnRecord;
-    if (record.version !== 1 || !record.pgn) {
+    if (record.version !== 1) {
       console.error(`Invalid Redis record at ${redisKey}`);
+      return null;
+    }
+    if (!record.pgn && !record.errorMessage) {
+      console.error(`Invalid Redis record at ${redisKey}: missing pgn and errorMessage`);
       return null;
     }
     return record;
