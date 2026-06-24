@@ -7,3 +7,15 @@ html {
 body {
   background: transparent;
 }
+
+/* Remove borders between chess board squares */
+[data-square] {
+  border: none !important;
+  outline: none !important;
+}
+
+/* Remove any borders from the board container */
+.chessboard-wrapper,
+[class*="chessboard"] {
+  border: none !important;
+}

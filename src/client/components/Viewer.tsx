@@ -244,7 +244,8 @@ export function Viewer() {
     >
       <Banner {...(state.description ? { description: state.description } : {})} />
       <div className="mt-4 flex min-h-0 flex-1 flex-col sm:flex-row sm:items-start sm:justify-center sm:gap-6 first:mt-0">
-        <div className="flex flex-col gap-4">
+        {/* Board and controls column - prioritized on mobile */}
+        <div className="flex flex-col gap-3">
           <div
             className="flex-shrink-0"
             style={{
@@ -262,131 +263,134 @@ export function Viewer() {
             />
           </div>
 
+          {/* Navigation controls - directly under board on mobile */}
+          <div className="flex items-center justify-between gap-1 rounded-lg bg-white p-2 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10">
+            <button
+              onClick={goToStart}
+              disabled={currentNodeId === 0}
+              className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
+              aria-label="Go to start"
+            >
+              <ChevronsLeft size={18} />
+            </button>
+            <button
+              onClick={goToPrevious}
+              disabled={currentNodeId === 0}
+              className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
+              aria-label="Previous move"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="whitespace-nowrap px-1 text-sm tabular-nums text-neutral-600 dark:text-neutral-400">
+              {currentPly} / {totalPly}
+            </span>
+            <button
+              onClick={goToNext}
+              disabled={!nextNode(currentNode)}
+              className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
+              aria-label="Next move"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <button
+              onClick={goToEnd}
+              disabled={!nextNode(currentNode)}
+              className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
+              aria-label="Go to end"
+            >
+              <ChevronsRight size={18} />
+            </button>
+            <button
+              onClick={toggleOrientation}
+              className="ml-1 rounded p-1.5 text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+              aria-label="Flip board"
+              title="Flip board"
+            >
+              <FlipVertical2 size={18} />
+            </button>
+          </div>
+
+          {/* Copy buttons - compact on mobile */}
           <div className="flex gap-2">
             <button
               onClick={() => copyToClipboard(state.pgn, 'pgn')}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
               aria-label="Copy PGN"
             >
               {copiedPgn ? (
                 <>
                   <Check size={16} />
-                  <span>Copied!</span>
+                  <span className="hidden sm:inline">Copied!</span>
                 </>
               ) : (
                 <>
                   <Copy size={16} />
-                  <span>Copy PGN</span>
+                  <span className="hidden sm:inline">Copy PGN</span>
                 </>
               )}
             </button>
             <button
               onClick={() => copyToClipboard(currentFen, 'fen')}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-300 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:hover:bg-neutral-800"
               aria-label="Copy current FEN"
             >
               {copiedFen ? (
                 <>
                   <Check size={16} />
-                  <span>Copied!</span>
+                  <span className="hidden sm:inline">Copied!</span>
                 </>
               ) : (
                 <>
                   <Copy size={16} />
-                  <span>Copy FEN</span>
+                  <span className="hidden sm:inline">Copy FEN</span>
                 </>
               )}
             </button>
           </div>
         </div>
 
-        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 sm:mt-0 sm:max-h-[calc(100vh-3rem)] sm:w-80 sm:flex-initial">
-        <div className="rounded-lg bg-white p-4 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10">
-          <h2 className="mb-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {state.headers.white ?? 'White'} vs {state.headers.black ?? 'Black'}
-          </h2>
-          {state.headers.event && (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.headers.event}</p>
-          )}
-          {state.headers.date && (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">{state.headers.date}</p>
-          )}
-          {state.headers.result && (
-            <p className="mt-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Result: {state.headers.result}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between gap-1 rounded-lg bg-white p-2 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10">
-          <button
-            onClick={goToStart}
-            disabled={currentNodeId === 0}
-            className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
-            aria-label="Go to start"
-          >
-            <ChevronsLeft size={18} />
-          </button>
-          <button
-            onClick={goToPrevious}
-            disabled={currentNodeId === 0}
-            className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
-            aria-label="Previous move"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <span className="whitespace-nowrap px-1 text-sm tabular-nums text-neutral-600 dark:text-neutral-400">
-            {currentPly} / {totalPly}
-          </span>
-          <button
-            onClick={goToNext}
-            disabled={!nextNode(currentNode)}
-            className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
-            aria-label="Next move"
-          >
-            <ChevronRight size={18} />
-          </button>
-          <button
-            onClick={goToEnd}
-            disabled={!nextNode(currentNode)}
-            className="rounded p-1.5 text-neutral-700 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-neutral-300 dark:hover:bg-neutral-800"
-            aria-label="Go to end"
-          >
-            <ChevronsRight size={18} />
-          </button>
-          <button
-            onClick={toggleOrientation}
-            className="ml-1 rounded p-1.5 text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-            aria-label="Flip board"
-            title="Flip board"
-          >
-            <FlipVertical2 size={18} />
-          </button>
-        </div>
-
-        <div
-          ref={movesPanelRef}
-          className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white p-4 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10"
-        >
-          <h3 className="mb-3 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-            Moves
-          </h3>
-          <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 text-sm leading-relaxed">
-            {state.tree.root.initialComment && (
-              <span className="mr-2 italic text-neutral-600 dark:text-neutral-400">
-                {state.tree.root.initialComment}
-              </span>
+        {/* Info and moves sidebar - below board on mobile, beside on desktop */}
+        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 sm:mt-0 sm:max-h-[calc(100vh-3rem)] sm:w-80 sm:flex-initial">
+          <div className="rounded-lg bg-white p-4 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10">
+            <h2 className="mb-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              {state.headers.white ?? 'White'} vs {state.headers.black ?? 'Black'}
+            </h2>
+            {state.headers.event && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">{state.headers.event}</p>
             )}
-            <Line
-              parent={state.tree.root}
-              nodes={state.tree.root.children}
-              currentNodeId={currentNodeId}
-              onSelect={(id) => setCurrentNodeId(id)}
-              forceNumber={Boolean(state.tree.root.initialComment)}
-            />
+            {state.headers.date && (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{state.headers.date}</p>
+            )}
+            {state.headers.result && (
+              <p className="mt-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Result: {state.headers.result}
+              </p>
+            )}
+          </div>
+
+          <div
+            ref={movesPanelRef}
+            className="min-h-0 flex-1 overflow-y-auto rounded-lg bg-white p-4 shadow dark:bg-neutral-900 dark:shadow-none dark:ring-1 dark:ring-white/10"
+          >
+            <h3 className="mb-3 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+              Moves
+            </h3>
+            <div className="flex flex-wrap items-baseline gap-x-1 gap-y-1 text-sm leading-relaxed">
+              {state.tree.root.initialComment && (
+                <span className="mr-2 italic text-neutral-600 dark:text-neutral-400">
+                  {state.tree.root.initialComment}
+                </span>
+              )}
+              <Line
+                parent={state.tree.root}
+                nodes={state.tree.root.children}
+                currentNodeId={currentNodeId}
+                onSelect={(id) => setCurrentNodeId(id)}
+                forceNumber={Boolean(state.tree.root.initialComment)}
+              />
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );
