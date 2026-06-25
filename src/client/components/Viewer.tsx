@@ -56,6 +56,7 @@ type PositionStatus = {
 };
 
 type ViewerLayout = 'stacked' | 'split';
+type BoardOrientation = 'white' | 'black';
 
 const LAST_MOVE_SHADOW = 'inset 0 0 0 9999px rgba(250, 204, 21, 0.34)';
 const CHECK_SHADOW =
@@ -95,6 +96,10 @@ function positionStatusForFen(fen: string): PositionStatus | null {
   };
 }
 
+function orientationForSideToMove(fen: string): BoardOrientation {
+  return new Chess(fen).turn() === 'b' ? 'black' : 'white';
+}
+
 function squareStylesForBoard(
   node: TreeNode | null,
   checkedKingSquare: string | undefined
@@ -124,9 +129,8 @@ function squareStylesForBoard(
 export function Viewer() {
   const [state, setState] = useState<ViewerState>({ status: 'loading' });
   const [currentNodeId, setCurrentNodeId] = useState<number>(0);
-  const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>(
-    'white'
-  );
+  const [boardOrientation, setBoardOrientation] =
+    useState<BoardOrientation>('white');
   const [copiedPgn, setCopiedPgn] = useState(false);
   const [copiedFen, setCopiedFen] = useState(false);
   const [viewerLayout, setViewerLayout] = useState<ViewerLayout>('stacked');
@@ -159,6 +163,9 @@ export function Viewer() {
           const puzzleMode = Boolean(data.puzzleMode);
           setPuzzleRevealed(false);
           setCurrentNodeId(tree.root.id);
+          setBoardOrientation(
+            puzzleMode ? orientationForSideToMove(tree.root.fen) : 'white'
+          );
           setState({
             status: 'ready',
             pgn: data.pgn,
